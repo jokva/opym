@@ -1,9 +1,10 @@
-#include <algorithm>
-
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 #include <opm/parser/eclipse/EclipseState/EclipseState.hpp>
+#include <opm/parser/eclipse/EclipseState/IOConfig/RestartConfig.hpp>
+#include <opm/parser/eclipse/EclipseState/Schedule/Schedule.hpp>
+#include <opm/parser/eclipse/EclipseState/Schedule/Well.hpp>
 #include <opm/parser/eclipse/Parser/Parser.hpp>
 
 namespace py = boost::python;
@@ -12,8 +13,9 @@ using namespace Opm;
 
 namespace {
 
-EclipseState (*parse_from_string)(const std::string&, const ParseContext&) = &Parser::parse;
-EclipseState (*parse_from_file)  (const std::string&, const ParseContext&) = &Parser::parseData;
+EclipseState (*parse_from_file)  (const std::string&, const ParseContext&) = &Parser::parse;
+EclipseState (*parse_from_string)(const std::string&, const ParseContext&) = &Parser::parseData;
+const RestartConfig& (EclipseState::*getrst)() const = &EclipseState::getRestartConfig;
 
 struct iterable_converter {
 
@@ -113,6 +115,48 @@ py::class_< ParseContext >( "ParseContext" )
 
 py::implicitly_convertible< std::vector< ctxact >, ParseContext >();
 
+/* EclipseState support */
 py::class_< EclipseState >( "EclipseState", py::no_init )
+    .add_property( "title", &EclipseState::getTitle )
+    .add_property( "restart", py::make_function(
+                                getrst,
+                                py::return_internal_reference<>() ) )
+    .add_property( "schedule", py::make_function(
+                               &EclipseState::getSchedule,
+                               py::return_internal_reference<>() ) )
+    ;
+
+/* pretty ghetto; should be replaced (and augmented) by a proper date conv */
+py::class_< boost::gregorian::date >( "Date" )
+    .def("__str__", &boost::gregorian::to_iso_extended_string )
+    ;
+
+/* RestartConfig support */
+py::class_< RestartConfig >( "RestartConfig", py::no_init )
+    .add_property( "first_step", &RestartConfig::getFirstRestartStep )
+    .def( "write", &RestartConfig::getWriteRestartFile )
+    .def( "date", &RestartConfig::getTimestepDate )
+    ;
+
+/* schedule support */
+size_t (Schedule::*num_wells)() const = &Schedule::numWells;
+size_t (Schedule::*num_wells_ts)(size_t) const = &Schedule::numWells;
+
+py::class_< Schedule >( "Schedule", py::no_init )
+    .def( "num_wells", num_wells )
+    .def( "num_wells", num_wells_ts )
+    .def( "has_well", &Schedule::hasWell )
+    .def( "__contains__", &Schedule::hasWell )
+    .def( "get_well", &Schedule::getWell, py::return_internal_reference<>() )
+    .def( "__getitem__", &Schedule::getWell, py::return_internal_reference<>() )
+    ;
+
+py::class_< Well, Well* >( "Well", py::no_init )
+    .add_property( "name", py::make_function(
+                            &Well::name,
+                            py::return_value_policy< py::copy_const_reference >() ) )
+    .add_property( "I", &Well::getHeadI )
+    .add_property( "J", &Well::getHeadJ )
+    .add_property( "allow_crossflow", &Well::getAllowCrossFlow )
     ;
 }

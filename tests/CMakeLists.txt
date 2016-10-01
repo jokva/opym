@@ -1,4 +1,4 @@
-foreach(prog parsecontext)
+foreach(prog parsecontext eclipsestate)
     set(py "${prog}.py")
     add_custom_command(OUTPUT ${py}
                        COMMAND cmake -E copy ${CMAKE_CURRENT_SOURCE_DIR}/${py}
