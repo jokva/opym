@@ -18,3 +18,5 @@ include_directories(${PYTHON_INCLUDE_DIRS}
 add_library(opym SHARED src/opym.cpp)
 target_link_libraries(opym ${Boost_LIBRARIES} ${opm-parser_LIBRARIES})
 set_target_properties(opym PROPERTIES PREFIX "")
+
+add_subdirectory(tests)
