@@ -13,8 +13,7 @@ using namespace Opm;
 
 namespace {
 
-EclipseState (*parse_from_file)  (const std::string&, const ParseContext&) = &Parser::parse;
-EclipseState (*parse_from_string)(const std::string&, const ParseContext&) = &Parser::parseData;
+EclipseState (*parse_from_file)(const std::string&, const ParseContext&) = &Parser::parse;
 const RestartConfig& (EclipseState::*getrst)() const = &EclipseState::getRestartConfig;
 
 struct iterable_converter {
@@ -81,6 +80,22 @@ struct pair_converter {
     }
 };
 
+template< typename T >
+struct vector_to_pylist {
+    static PyObject* convert( const std::vector< T >& vec ) {
+        py::object getiter = py::iterator< std::vector< T > >();
+        return py::list{ getiter( vec ) }.ptr();
+    }
+};
+
+std::vector< Well > get_wells( const Schedule& sch ) {
+    std::vector< Well > wells;
+    for( const auto& w : sch.getWells() )
+        wells.push_back( *w );
+
+    return wells;
+}
+
 }
 
 BOOST_PYTHON_MODULE(opym) {
@@ -124,6 +139,13 @@ py::class_< EclipseState >( "EclipseState", py::no_init )
     .add_property( "schedule", py::make_function(
                                &EclipseState::getSchedule,
                                py::return_internal_reference<>() ) )
+    .add_property( "e3d", py::make_function(
+                            &EclipseState::get3DProperties,
+                            py::return_internal_reference<>() ) )
+    ;
+
+py::class_< Eclipse3DProperties >( "E3D", py::no_init )
+    .def( "__contains__", &Eclipse3DProperties::supportsGridProperty )
     ;
 
 /* pretty ghetto; should be replaced (and augmented) by a proper date conv */
@@ -149,9 +171,10 @@ py::class_< Schedule >( "Schedule", py::no_init )
     .def( "__contains__", &Schedule::hasWell )
     .def( "get_well", &Schedule::getWell, py::return_internal_reference<>() )
     .def( "__getitem__", &Schedule::getWell, py::return_internal_reference<>() )
+    .add_property( "wells", get_wells )
     ;
 
-py::class_< Well, Well* >( "Well", py::no_init )
+py::class_< Well >( "Well", py::no_init )
     .add_property( "name", py::make_function(
                             &Well::name,
                             py::return_value_policy< py::copy_const_reference >() ) )
@@ -159,4 +182,9 @@ py::class_< Well, Well* >( "Well", py::no_init )
     .add_property( "J", &Well::getHeadJ )
     .add_property( "allow_crossflow", &Well::getAllowCrossFlow )
     ;
+
+py::class_< std::vector< Well > >( "WellVec" )
+    .def( py::vector_indexing_suite< std::vector< Well > >() )
+    ;
+
 }

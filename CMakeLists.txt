@@ -19,4 +19,5 @@ add_library(opym SHARED src/opym.cpp)
 target_link_libraries(opym ${Boost_LIBRARIES} ${opm-parser_LIBRARIES})
 set_target_properties(opym PROPERTIES PREFIX "")
 
+add_subdirectory(applications)
 add_subdirectory(tests)

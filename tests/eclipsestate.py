@@ -41,6 +41,13 @@ class TestEclipseState(unittest.TestCase):
         self.assertEqual(14, b2h.I)
         self.assertEqual(30, b2h.J)
 
+    def test_3D_properties(self):
+        e3d = self.ecl.e3d
+        self.assertTrue("SATNUM" in e3d)
+        self.assertTrue("ACTNUM" in e3d)
+        self.assertTrue("PORO" in e3d)
+        self.assertFalse("PORV" not in e3d)
+
 
 if __name__ == '__main__':
         unittest.main()
