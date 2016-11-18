@@ -180,7 +180,13 @@ py::class_< Well >( "Well", py::no_init )
                             py::return_value_policy< py::copy_const_reference >() ) )
     .add_property( "I", &Well::getHeadI )
     .add_property( "J", &Well::getHeadJ )
+    .add_property( "ref_depth", &Well::getRefDepth )
     .add_property( "allow_crossflow", &Well::getAllowCrossFlow )
+    .def( "get_groupname", &Well::getGroupName )
+    .def( "set_groupname", &Well::setGroupName )
+    .def( "is_producer", &Well::isProducer )
+    .def( "is_injector", &Well::isInjector )
+    .def( "defined", &Well::hasBeenDefined )
     ;
 
 py::class_< std::vector< Well > >( "WellVec" )
